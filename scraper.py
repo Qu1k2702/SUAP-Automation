@@ -1,46 +1,65 @@
 from playwright.sync_api import sync_playwright
 import os
+import media
+from models import Disciplina
+from dotenv import load_dotenv
 
-notas = {}
-
-with sync_playwright() as pw:
-    browser = pw.chromium.launch(headless=True)
-    #Abrir navegador
-    page = browser.new_page()
-
-    #Navegar para uma pagina
-    page.goto("https://suap.ifsp.edu.br/accounts/login/?next=/")
-
-    #Encontrar elementos
-    user = page.get_by_role("textbox", name="Usuário:")
-    password = page.get_by_role("textbox", name="Senha:")
-    login_button = page.get_by_role("button", name="Acessar")
-
-    #Login
-    user.fill(os.getenv("SUAP_USER"))
-    password.fill(os.getenv("SUAP_PASSWORD"))
-    login_button.click()
-
-    #Acessar boletim
-    page.get_by_role("link", name="Ensino").click()
-    page.get_by_role("link", name="Boletins").click()
-
-    #Boletim
-    page.wait_for_selector("#tabela_boletim tbody tr")
+def coletar_notas():
     
-    boletim = page.locator("#tabela_boletim")
 
-    linhas = boletim.locator("tbody tr")
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        #Abrir navegador
+        page = browser.new_page()
 
+        #Navegar para uma pagina
+        page.goto("https://suap.ifsp.edu.br/accounts/login/?next=/")
 
-    for i in range(linhas.count()):
-        linha = linhas.nth(i)
+        #Encontrar elementos
+        user = page.get_by_role("textbox", name="Usuário:")
+        password = page.get_by_role("textbox", name="Senha:")
+        login_button = page.get_by_role("button", name="Acessar")
 
-        disciplina = linha.locator("td").nth(2).text_content().strip()[14:18]
-        nota_n1 = converter_notas(linha.locator("td").nth(9).text_content().strip())
-        nota_n2 = converter_notas(linha.locator("td").nth(11).text_content().strip())
-        nota_n3 = converter_notas(linha.locator("td").nth(13).text_content().strip())
-        nota_n4 = converter_notas(linha.locator("td").nth(15).text_content().strip())
+        #Login
+        load_dotenv("credenciais.env")
+       
+        USUARIO = os.getenv("SUAP_USER")
+        SENHA = os.getenv("SUAP_PASSWORD")
 
-        #print(f"{disciplina}: Bim1: {nota_n1} | Bim2: {nota_n2} | Bim3: {nota_n3} | Bim4: {nota_n4}")
-        notas[disciplina] = [nota_n1, nota_n2, nota_n3, nota_n4]
+        user.fill(USUARIO)
+        password.fill(SENHA)
+        login_button.click()
+
+        #Acessar boletim
+        page.get_by_role("link", name="Ensino").click()
+        page.get_by_role("link", name="Boletins").click()
+
+        #Boletim
+        page.wait_for_selector("#tabela_boletim tbody tr")
+        
+        boletim = page.locator("#tabela_boletim")
+
+        linhas = boletim.locator("tbody tr")
+
+        disciplinas = {}
+
+        for i in range(linhas.count()):
+            linha = linhas.nth(i)
+            colunas = linha.locator("td")
+
+            codigo_materia = colunas.nth(2).text_content().strip()[14:18]
+            indices = [9, 11, 13, 15]
+
+            notas_materia = [
+                media.converter_notas(colunas.nth(i).text_content())
+                for i in indices
+            ]
+
+            disciplina = Disciplina(
+                codigo = codigo_materia,
+                notas = notas_materia
+            )
+
+            disciplinas[codigo_materia] = disciplina
+
+    return disciplinas
