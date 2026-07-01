@@ -1,12 +1,11 @@
 from playwright.sync_api import sync_playwright
 import os
 import media
-from models import Disciplina
+from models import Disciplina, Aluno
 from dotenv import load_dotenv
 
 def coletar_notas():
     
-
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         #Abrir navegador
@@ -21,7 +20,7 @@ def coletar_notas():
         login_button = page.get_by_role("button", name="Acessar")
 
         #Login
-        load_dotenv("credenciais.env")
+        load_dotenv()
        
         USUARIO = os.getenv("SUAP_USER")
         SENHA = os.getenv("SUAP_PASSWORD")
@@ -41,7 +40,9 @@ def coletar_notas():
 
         linhas = boletim.locator("tbody tr")
 
-        disciplinas = {}
+        notas = {}
+
+        aluno = Aluno("Thales")
 
         for i in range(linhas.count()):
             linha = linhas.nth(i)
@@ -51,15 +52,12 @@ def coletar_notas():
             indices = [9, 11, 13, 15]
 
             notas_materia = [
-                media.converter_notas(colunas.nth(i).text_content())
-                for i in indices
-            ]
+                media.converter_notas(colunas.nth(i).text_content()) for i in indices]
 
-            disciplina = Disciplina(
-                codigo = codigo_materia,
-                notas = notas_materia
-            )
+            disciplina = Disciplina(codigo_materia, notas_materia)
 
-            disciplinas[codigo_materia] = disciplina
+            notas[codigo_materia] = disciplina
 
-    return disciplinas
+            aluno.cadastrar_disciplina(codigo_materia)
+
+    return notas, aluno

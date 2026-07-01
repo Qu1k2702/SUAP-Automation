@@ -1,7 +1,11 @@
 import scraper
 
-disciplinas = scraper.coletar_notas()
+notas_coletadas = scraper.coletar_notas()
 
-bio = disciplinas["BIO2"]
+aluno = notas_coletadas[1]
+notas_por_materia = notas_coletadas[0]
 
-print(bio.media())
+bio = notas_por_materia["BIO2"]
+
+print(aluno.listar_disciplinas())
+print(bio.acessar_notas())
