@@ -4,7 +4,7 @@ import media
 from models import Disciplina, Aluno
 from dotenv import load_dotenv
 
-def coletar_notas():
+def coletar_notas(nome_aluno: str):
     
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
@@ -42,7 +42,7 @@ def coletar_notas():
 
         notas = {}
 
-        aluno = Aluno("Thales")
+        aluno = Aluno(nome_aluno)
 
         for i in range(linhas.count()):
             linha = linhas.nth(i)
@@ -60,4 +60,4 @@ def coletar_notas():
 
             aluno.cadastrar_disciplina(codigo_materia)
 
-    return notas, aluno
+    return {"Notas": notas, "Aluno": aluno}
